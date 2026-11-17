@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, Trophy, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,7 @@ function Admin() {
   return (
     <main className="mx-auto max-w-5xl space-y-12 px-4 py-12">
       <RaffleForm />
+      <Draw />
       <Orders />
     </main>
   );
@@ -86,6 +87,61 @@ function RaffleForm() {
           </F>
         </div>
         <Button onClick={save} disabled={saving} size="lg" className="md:col-span-2">{saving ? "Salvando…" : "Salvar rifa"}</Button>
+      </div>
+    </section>
+  );
+}
+
+function Draw() {
+  const qc = useQueryClient();
+  const { data: raffle } = useQuery(raffleQuery);
+  const [rolling, setRolling] = useState(false);
+  const [display, setDisplay] = useState<number | null>(null);
+  if (!raffle) return null;
+  const total = raffle.total_numbers;
+  const draw = async () => {
+    if (raffle.winner_number && !window.confirm("Já existe um ganhador. Sortear novamente?")) return;
+    setRolling(true);
+    const timer = setInterval(() => setDisplay(1 + Math.floor(Math.random() * total)), 70);
+    const [{ data, error }] = await Promise.all([
+      supabase.rpc("draw_winner", { _raffle_id: raffle.id }),
+      new Promise((r) => setTimeout(r, 3000)),
+    ]);
+    clearInterval(timer);
+    setRolling(false);
+    if (error) { setDisplay(null); toast.error(error.message); return; }
+    const w = data?.[0];
+    if (w) { setDisplay(w.number); toast.success(`Ganhador: ${pad(w.number, total)} — ${w.full_name}`); }
+    qc.invalidateQueries({ queryKey: ["raffle"] });
+  };
+  const reset = async () => {
+    if (!window.confirm("Apagar TODAS as reservas e o ganhador para começar uma nova rifa?")) return;
+    const { error } = await supabase.rpc("reset_raffle", { _raffle_id: raffle.id });
+    if (error) { toast.error(error.message); return; }
+    setDisplay(null);
+    toast.success("Rifa reiniciada");
+    qc.invalidateQueries();
+  };
+  const shown = rolling ? display : (display ?? raffle.winner_number);
+  return (
+    <section className="rounded-2xl bg-hero p-8 text-center text-primary-foreground shadow-ticket">
+      <h2 className="font-display text-3xl font-bold">Sorteio</h2>
+      <p className="mt-1 opacity-80">Sorteia apenas entre os números com Pix confirmado.</p>
+      <div className="my-6 font-display text-7xl font-bold tabular-nums md:text-8xl">
+        {shown ? pad(shown, total) : "—"}
+      </div>
+      {!rolling && raffle.winner_number && (
+        <p className="mb-6 text-lg">
+          <Trophy className="mr-1 inline h-5 w-5" /> {raffle.winner_name || "Ganhador"}
+        </p>
+      )}
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button variant="gold" size="lg" onClick={draw} disabled={rolling}>
+          {rolling ? "Sorteando…" : "Sortear agora"}
+        </Button>
+        <Button variant="outline" size="lg" className="text-foreground" onClick={reset} disabled={rolling}>
+          <RotateCcw /> Reiniciar rifa
+        </Button>
       </div>
     </section>
   );

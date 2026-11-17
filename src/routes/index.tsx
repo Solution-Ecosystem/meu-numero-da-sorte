@@ -108,6 +108,15 @@ function Index() {
         </div>
       </section>
 
+      {raffle.winner_number && (
+        <section className="bg-accent text-accent-foreground">
+          <div className="mx-auto max-w-6xl px-4 py-6 text-center font-display text-2xl font-bold">
+            🏆 Número sorteado: {pad(raffle.winner_number, total)}
+            {raffle.winner_name ? ` — ${raffle.winner_name.split(" ")[0]}` : ""}
+          </div>
+        </section>
+      )}
+
       <section className="mx-auto max-w-6xl px-4 py-12 pb-40">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
