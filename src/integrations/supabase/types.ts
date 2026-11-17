@@ -40,6 +40,7 @@ export type Database = {
           created_at: string
           description: string
           draw_date: string
+          drawn_at: string | null
           id: string
           image_url: string | null
           pix_key: string
@@ -47,11 +48,14 @@ export type Database = {
           price: number
           title: string
           total_numbers: number
+          winner_name: string | null
+          winner_number: number | null
         }
         Insert: {
           created_at?: string
           description?: string
           draw_date?: string
+          drawn_at?: string | null
           id?: string
           image_url?: string | null
           pix_key?: string
@@ -59,11 +63,14 @@ export type Database = {
           price?: number
           title?: string
           total_numbers?: number
+          winner_name?: string | null
+          winner_number?: number | null
         }
         Update: {
           created_at?: string
           description?: string
           draw_date?: string
+          drawn_at?: string | null
           id?: string
           image_url?: string | null
           pix_key?: string
@@ -71,6 +78,8 @@ export type Database = {
           price?: number
           title?: string
           total_numbers?: number
+          winner_name?: string | null
+          winner_number?: number | null
         }
         Relationships: []
       }
@@ -132,6 +141,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      draw_winner: {
+        Args: { _raffle_id: string }
+        Returns: {
+          full_name: string
+          number: number
+        }[]
+      }
       get_taken_numbers: {
         Args: { _raffle_id: string }
         Returns: {
@@ -150,6 +166,7 @@ export type Database = {
         Args: { _numbers: number[]; _raffle_id: string }
         Returns: undefined
       }
+      reset_raffle: { Args: { _raffle_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "user"
